@@ -1,0 +1,61 @@
+% =========================================================================
+% EJERCICIO 2: ANÁLISIS DE FRECUENCIA Y MÁRGENES DE ESTABILIDAD DE G2(s)
+% =========================================================================
+clearvars; clc; close all;
+
+% 1. Definición de la variable de Laplace y frecuencias
+s = tf('s');
+
+w_z1 = 2*pi * 85e3;       % Cero en 85 kHz
+w_p1 = 2*pi * 110e3;      % Polo en 110 kHz
+a_q  = 2*pi * 120e3;      % Coeficiente de s
+w_n2 = 2*pi * 130e3;      % Frecuencia natural del término cuadrático
+
+% 2. Construcción de la función de transferencia G2(s)
+num = 5e13 * (s + w_z1);
+den = s * (s + w_p1) * (s^2 + a_q*s + w_n2^2);
+G2  = num / den;
+
+% 3. Generación de la Tabla de 20 puntos (80 kHz a 150 kHz)
+f_kHz = linspace(80, 150, 20);
+w_rad = 2*pi * f_kHz * 1e3;
+
+[mag, phase] = bode(G2, w_rad);
+mag_dB    = 20*log10(squeeze(mag));
+phase_deg = squeeze(phase);
+
+Tabla_Resultados = table(f_kHz', w_rad', mag_dB, phase_deg, ...
+    'VariableNames', {'f_kHz', 'w_rad_s', 'Mag_dB', 'Phase_deg'});
+
+disp('====================================================================');
+disp('            TABLA DE FRECUENCIA DE 20 PUNTOS (G2)                   ');
+disp('====================================================================');
+disp(Tabla_Resultados);
+
+% 4. Extracción e Impresión de Márgenes de Estabilidad
+[Gm, Pm, Wcg, Wcp] = margin(G2);
+Gm_dB = 20*log10(Gm);
+f_pc_kHz = (Wcg / (2*pi)) / 1e3;
+f_gc_kHz = (Wcp / (2*pi)) / 1e3;
+
+fprintf('====================================================================\n');
+fprintf('                   RESULTADOS DE ESTABILIDAD                        \n');
+fprintf('====================================================================\n');
+fprintf('Frecuencia de corte de fase (w_pc) : %.4e rad/s (%.2f kHz)\n', Wcg, f_pc_kHz);
+fprintf('  -> Margen de Ganancia (Gm)        : %.2f dB\n', Gm_dB);
+fprintf('--------------------------------------------------------------------\n');
+fprintf('Frecuencia de corte de ganancia(w_gc): %.4e rad/s (%.2f kHz)\n', Wcp, f_gc_kHz);
+fprintf('  -> Margen de Fase (Pm)            : %.2f deg\n', Pm);
+fprintf('====================================================================\n');
+
+if Gm_dB > 0 && Pm > 0
+    fprintf('JUICIO DE ESTABILIDAD: El sistema en lazo cerrado es ESTABLE.\n');
+else
+    fprintf('JUICIO DE ESTABILIDAD: El sistema en lazo cerrado es INESTABLE.\n');
+end
+fprintf('====================================================================\n');
+
+% 5. Gráfica del Diagrama de Bode con Márgenes
+figure('Name', 'Diagrama de Bode - Ejercicio 2', 'Color', [1 1 1]);
+margin(G2);
+grid on;

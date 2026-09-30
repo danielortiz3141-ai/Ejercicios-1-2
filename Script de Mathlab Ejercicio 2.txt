@@ -1,0 +1,57 @@
+% =========================================================================
+% Discusión No. 4 - Ejercicio 1
+% =========================================================================
+clear; clc; close all;
+
+% Definición de constante y parámetros
+w_100k = 2 * pi * 100e3;
+w_90k  = 2 * pi * 90e3;
+w_140k = 2 * pi * 140e3;
+
+% Definición de la Función de Transferencia G1(s)
+num = 10^8 * [1, w_100k];
+den = conv([1, 0], conv([1, w_90k], [1, w_140k]));
+G1 = tf(num, den);
+
+% 1. Tabulación de 20 valores entre 80 kHz y 150 kHz
+f_tab = linspace(80e3, 150e3, 20); % 20 valores de frecuencia en Hz
+w_tab = 2 * pi * f_tab;             % Frecuencias en rad/s
+
+[mag_raw, phase_raw] = bode(G1, w_tab);
+mag_dB = 20 * log10(squeeze(mag_raw));
+phase_deg = squeeze(phase_raw);
+
+% Mostrar tabla en consola
+T = table(f_tab'/1e3, w_tab', mag_dB, phase_deg, ...
+    'VariableNames', {'f_kHz', 'w_rad_s', 'Mag_dB', 'Fase_deg'});
+disp('=== TABLA DE 20 VALORES EN RANGO (80 kHz - 150 kHz) ===');
+disp(T);
+
+% 3 y 4. Obtención y visualización de márgenes de estabilidad
+[Gm, Pm, Wcg, Wcp] = margin(G1);
+Gm_dB = 20 * log10(Gm);
+f_pc_Hz = Wcg / (2 * pi);
+f_gc_Hz = Wcp / (2 * pi);
+
+fprintf('====================================================\n');
+fprintf('                PUNTOS DE CORTE Y MÁRGENES         \n');
+fprintf('====================================================\n');
+fprintf('Corte en -180 deg (w_pc) : %.4f rad/s (%.4f kHz)\n', Wcg, f_pc_Hz/1e3);
+fprintf('  -> Margen de Ganancia  : %.2f dB\n', Gm_dB);
+fprintf('----------------------------------------------------\n');
+fprintf('Corte en 0 dB (w_gc)     : %.4f rad/s (%.4f kHz)\n', Wcp, f_gc_Hz/1e3);
+fprintf('  -> Margen de Fase      : %.2f deg\n', Pm);
+fprintf('====================================================\n');
+
+if Gm_dB > 0 && Pm > 0
+    fprintf('JUICIO DE ESTABILIDAD: El sistema es ESTABLE.\n');
+else
+    fprintf('JUICIO DE ESTABILIDAD: El sistema es INESTABLE.\n');
+end
+fprintf('====================================================\n');
+
+% 5. Gráfico de Bode con puntos de margen
+figure;
+margin(G1);
+grid on;
+title('Diagrama de Bode de G_1(s) - Ejercicio 1');
